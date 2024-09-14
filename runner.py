@@ -52,33 +52,46 @@ def parse_checkstyle_output(xml_output):
             violations.append(f"{filename} - Line {line}, Column {column}, Severity: {severity}: {message}")
     return '\n'.join(violations)
 
+def format_combined_output(checkstyle_output, ai_review_output, java_file):
+    # Header for combined output
+    combined_output = "=== Combined Code Review ===\n\n"
+
+    # Format Checkstyle output
+    combined_output += "=== Checkstyle Results ===\n"
+    if not checkstyle_output:
+        combined_output += "No Checkstyle violations found.\n"
+    else:
+        combined_output += f"File: {java_file}\nViolations:\n"
+        combined_output += checkstyle_output
+
+    # Format AI Review output
+    combined_output += "\n\n=== AI Review Suggestions ===\n"
+    combined_output += "Summary of Issues:\n"
+    combined_output += ai_review_output
+
+    return combined_output
+
 def main():
     java_file = 'Sample.java'
     checkstyle_jar = 'checkstyle-10.18.1-all.jar'
     config_file = 'google_checks.xml'
     
-    # Run Checkstyle process and parse the output
+    # Run Checkstyle
     print("Running Checkstyle...")
     checkstyle_output = run_checkstyle(java_file, checkstyle_jar, config_file)
     parsed_checkstyle_output = parse_checkstyle_output(checkstyle_output)
-    print("Parsed Checkstyle Output:\n", parsed_checkstyle_output)
     
     # Read Java code for AI code review
     with open(java_file, 'r') as file:
         java_code = file.read()
 
+    # Run AI Code Review
     print("Running AI Code Review...")
     ai_review_output = ai_code_review(java_code)
-    print("AI Review Output:\n", ai_review_output)
 
-    combined_output = f"""
-    === Checkstyle Output ===
-    {parsed_checkstyle_output}
-
-    === AI Code Review Output ===
-    {ai_review_output}
-    """
-    print(combined_output)
+    # Formatting and displaying results of Checkstyle and AI Code Review
+    formatted_output = format_combined_output(parsed_checkstyle_output, ai_review_output, java_file)
+    print(formatted_output)
 
 if __name__ == "__main__":
     main()
