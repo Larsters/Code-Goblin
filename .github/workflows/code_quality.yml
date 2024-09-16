@@ -11,23 +11,33 @@ on:
 jobs:
   check_code_quality:
     runs-on: ubuntu-latest
-    
+    permissions:
+      contents: read
+      pull-requests: write
+
     steps:
       - name: Checkout code
         uses: actions/checkout@v2
-      
+
       - name: Set up Python
         uses: actions/setup-python@v2
         with:
           python-version: '3.9'
-      
+
       - name: Install dependencies
         run: |
           pip install -r requirements.txt
           wget https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.18.1/checkstyle-10.18.1-all.jar
-      
+
       - name: Run Code Quality Check
+        id: code_quality
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
         run: |
-          python main.py
+          python main.py > code_review_output.txt
+
+      - name: Comment on Pull Request
+        if: github.event_name == 'pull_request'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          path: code_review_output.txt
