@@ -40,6 +40,7 @@ def ai_code_review(code_snippet):
 
 # for parsing the checkstyle output, xml for the checkstyle output 
 def parse_checkstyle_output(xml_output):
+    print("XML Output:\n", xml_output)  # Debugging line
     root = ET.fromstring(xml_output)
     violations = []
     for file in root.findall('file'):
