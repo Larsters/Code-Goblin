@@ -19,7 +19,7 @@ def run_checkstyle(java_file, checkstyle_jar, config_file):
     return result.stdout
 
 def ai_code_review(code_snippet):
-    prompt = f"""Review the following Java code for style issues and suggest improvements if necessary, otherwise do nothing.:
+    prompt = f"""Review the following Java code for style issues and suggest improvements if necessary in Russian language, otherwise do nothing.:
 
 ```java
 {code_snippet}
