@@ -26,9 +26,6 @@ jobs:
           pip install -r requirements.txt
           wget https://github.com/checkstyle/checkstyle/releases/download/checkstyle-10.18.1/checkstyle-10.18.1-all.jar
       
-      - name: List directory contents
-        run: ls -la
-      
       - name: Run Code Quality Check
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}

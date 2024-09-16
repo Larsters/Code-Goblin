@@ -19,7 +19,7 @@ def run_checkstyle(java_file, checkstyle_jar, config_file):
     return result.stdout
 
 def ai_code_review(code_snippet):
-    prompt = f"""Review the following Java code for style issues and suggest improvements:
+    prompt = f"""Review the following Java code for style issues and suggest improvements if necessary, otherwise do nothing.:
 
 ```java
 {code_snippet}
@@ -40,12 +40,13 @@ def parse_checkstyle_output(xml_output):
         print("No Checkstyle output to parse.")
         return "No Checkstyle violations found."
     
+    # if xml if malformed, catch the exception
     try:
         root = ET.fromstring(xml_output)
     except ET.ParseError as e:
         print(f"Error parsing XML: {e}")
         return f"Error parsing Checkstyle output: {e}"
-
+    # for cases xml output is not in the expected format for some reason
     violations = []
     for file in root.findall('file'):
         filename = file.get('name')
