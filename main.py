@@ -68,7 +68,7 @@ def format_combined_output(checkstyle_output, ai_review_output, java_file):
     return combined_output
 
 def main():
-    java_file = 'Sample.java'
+    java_file = 'sample.java'
     checkstyle_jar = 'checkstyle-10.18.1-all.jar'
     config_file = 'google_checks.xml'
     
