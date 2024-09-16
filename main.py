@@ -4,7 +4,6 @@ import os
 import xml.etree.ElementTree as ET
 from dotenv import load_dotenv
 
-
 load_dotenv()
 
 client = OpenAI()
@@ -19,7 +18,6 @@ def run_checkstyle(java_file, checkstyle_jar, config_file):
     result = subprocess.run(cmd, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
     return result.stdout
 
-# AI Code Review Function
 def ai_code_review(code_snippet):
     prompt = f"""Review the following Java code for style issues and suggest improvements:
 
@@ -27,7 +25,7 @@ def ai_code_review(code_snippet):
 {code_snippet}
 ```"""
     response = client.chat.completions.create(
-        model='gpt-4o-mini', 
+        model='gpt-4o-mini',  
         messages=[
             {'role': 'system', 'content': 'You are a senior Java developer and code reviewer.'},
             {'role': 'user', 'content': prompt}
@@ -35,13 +33,19 @@ def ai_code_review(code_snippet):
         max_tokens=500,
         temperature=0.2,
     )
-    response_dict = response.to_dict()
-    return response_dict['choices'][0]['message']['content']
+    return response.choices[0].message.content
 
-# for parsing the checkstyle output, xml for the checkstyle output 
 def parse_checkstyle_output(xml_output):
-    print("XML Output:\n", xml_output)  # Debugging line
-    root = ET.fromstring(xml_output)
+    if not xml_output.strip():
+        print("No Checkstyle output to parse.")
+        return "No Checkstyle violations found."
+    
+    try:
+        root = ET.fromstring(xml_output)
+    except ET.ParseError as e:
+        print(f"Error parsing XML: {e}")
+        return f"Error parsing Checkstyle output: {e}"
+
     violations = []
     for file in root.findall('file'):
         filename = file.get('name')
@@ -51,25 +55,16 @@ def parse_checkstyle_output(xml_output):
             column = error.get('column')
             severity = error.get('severity')
             violations.append(f"{filename} - Line {line}, Column {column}, Severity: {severity}: {message}")
-    return '\n'.join(violations)
+    
+    return '\n'.join(violations) if violations else "No Checkstyle violations found."
 
 def format_combined_output(checkstyle_output, ai_review_output, java_file):
-    # Header for combined output
     combined_output = "=== Combined Code Review ===\n\n"
-
-    # Format Checkstyle output
     combined_output += "=== Checkstyle Results ===\n"
-    if not checkstyle_output:
-        combined_output += "No Checkstyle violations found.\n"
-    else:
-        combined_output += f"File: {java_file}\nViolations:\n"
-        combined_output += checkstyle_output
-
-    # Format AI Review output
+    combined_output += f"File: {java_file}\n"
+    combined_output += checkstyle_output
     combined_output += "\n\n=== AI Review Suggestions ===\n"
-    combined_output += "Summary of Issues:\n"
     combined_output += ai_review_output
-
     return combined_output
 
 def main():
@@ -77,20 +72,21 @@ def main():
     checkstyle_jar = 'checkstyle-10.18.1-all.jar'
     config_file = 'google_checks.xml'
     
-    # Run Checkstyle
+    # Ensure files exist
+    for file in [java_file, checkstyle_jar, config_file]:
+        if not os.path.exists(file):
+            print(f"Error: {file} not found in the current directory.")
+            return
+
     print("Running Checkstyle...")
     checkstyle_output = run_checkstyle(java_file, checkstyle_jar, config_file)
     parsed_checkstyle_output = parse_checkstyle_output(checkstyle_output)
     
-    # Read Java code for AI code review
+    print("Running AI Code Review...")
     with open(java_file, 'r') as file:
         java_code = file.read()
-
-    # Run AI Code Review
-    print("Running AI Code Review...")
     ai_review_output = ai_code_review(java_code)
-
-    # Formatting and displaying results of Checkstyle and AI Code Review
+    
     formatted_output = format_combined_output(parsed_checkstyle_output, ai_review_output, java_file)
     print(formatted_output)
 
