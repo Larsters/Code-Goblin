@@ -19,14 +19,13 @@ def run_checkstyle(java_file, checkstyle_jar, config_file):
     return result.stdout
 
 def ai_code_review(code_snippet):
-    prompt = f"""Review the following Java code for style issues and suggest improvements (in Russian). 
-Do not use markdown formatting, avoid unnecessary comments like 'Примеры плохого кода', and just provide the corrected code and recommendations:
-    
+    prompt = f"""Review the following Java code for style issues and suggest improvements. Return the results in Russian, but keep it concise:
+
 ```java
 {code_snippet}
 ```"""
     response = client.chat.completions.create(
-        model='gpt-4o-mini',  
+        model='gpt-4',  
         messages=[
             {'role': 'system', 'content': 'You are a senior Java developer and code reviewer.'},
             {'role': 'user', 'content': prompt}
@@ -34,46 +33,54 @@ Do not use markdown formatting, avoid unnecessary comments like 'Примеры 
         max_tokens=500,
         temperature=0.2,
     )
-    review_suggestions = response.choices[0].message.content
-    review_suggestions = review_suggestions.replace('```java', '').replace('```', '').replace('**', '')
-    
-    return review_suggestions
+    return response.choices[0].message.content
 
+# Parsing Checkstyle XML output
 def parse_checkstyle_output(xml_output):
     if not xml_output.strip():
-        print("No Checkstyle output to parse.")
         return "No Checkstyle violations found."
-    
-    # if xml if malformed, catch the exception
+    # violations just in case the XML is not well-formed
     try:
         root = ET.fromstring(xml_output)
     except ET.ParseError as e:
-        print(f"Error parsing XML: {e}")
         return f"Error parsing Checkstyle output: {e}"
-    # for cases xml output is not in the expected format for some reason
+
     violations = []
     for file in root.findall('file'):
-        filename = file.get('name')
         for error in file.findall('error'):
             message = error.get('message')
             line = error.get('line')
             column = error.get('column')
             severity = error.get('severity')
-            violations.append(f"Line {line}, Column {column}, Severity: {severity}: {message}")
+            violations.append(f"Line {line}, Column {column}: {message}")
     
     return '\n'.join(violations) if violations else "No Checkstyle violations found."
 
-def format_combined_output(checkstyle_output, ai_review_output, java_file):
-    combined_output = "=== Combined Code Review ===\n\n"
-    combined_output += "=== Checkstyle Results ===\n"
-    combined_output += f"File: {java_file}\n"
-    combined_output += checkstyle_output
-    combined_output += "\n\n=== AI Review Suggestions ===\n"
-    combined_output += ai_review_output
-    return combined_output
+# Combined review using LLM
+def generate_combined_review(checkstyle_output, ai_review_output):
+    prompt = f"""The following two reviews were generated: one from Checkstyle and one from an AI review of the code. Summarize them into one concise review in Russian, but focus only on key improvements. Here are the two reviews:
+
+Checkstyle Output:
+{checkstyle_output}
+
+AI Review Output:
+{ai_review_output}
+
+Return a concise and useful review in Russian.
+"""
+    response = client.chat.completions.create(
+        model='gpt-4',  
+        messages=[
+            {'role': 'system', 'content': 'You are a senior Java developer and code reviewer.'},
+            {'role': 'user', 'content': prompt}
+        ],
+        max_tokens=500,
+        temperature=0.2,
+    )
+    return response.choices[0].message.content
 
 def main():
-    java_file = 'sample.java'
+    java_file = 'Sample.java'
     checkstyle_jar = 'checkstyle-10.18.1-all.jar'
     config_file = 'google_checks.xml'
     
@@ -83,17 +90,21 @@ def main():
             print(f"Error: {file} not found in the current directory.")
             return
 
+    # Run Checkstyle
     print("Running Checkstyle...")
     checkstyle_output = run_checkstyle(java_file, checkstyle_jar, config_file)
     parsed_checkstyle_output = parse_checkstyle_output(checkstyle_output)
     
+    # Run AI Code Review
     print("Running AI Code Review...")
     with open(java_file, 'r') as file:
         java_code = file.read()
     ai_review_output = ai_code_review(java_code)
     
-    formatted_output = format_combined_output(parsed_checkstyle_output, ai_review_output, java_file)
-    print(formatted_output)
+    # Generate and display the combined review
+    print("Generating combined review...")
+    combined_review = generate_combined_review(parsed_checkstyle_output, ai_review_output)
+    print(combined_review)
 
 if __name__ == "__main__":
     main()
