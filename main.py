@@ -19,8 +19,9 @@ def run_checkstyle(java_file, checkstyle_jar, config_file):
     return result.stdout
 
 def ai_code_review(code_snippet):
-    prompt = f"""Review the following Java code for style issues and suggest improvements if necessary in Russian language, otherwise do nothing.:
-
+    prompt = f"""Review the following Java code for style issues and suggest improvements (in Russian). 
+Do not use markdown formatting, avoid unnecessary comments like 'Примеры плохого кода', and just provide the corrected code and recommendations:
+    
 ```java
 {code_snippet}
 ```"""
@@ -33,7 +34,10 @@ def ai_code_review(code_snippet):
         max_tokens=500,
         temperature=0.2,
     )
-    return response.choices[0].message.content
+    review_suggestions = response.choices[0].message.content
+    review_suggestions = review_suggestions.replace('```java', '').replace('```', '').replace('**', '')
+    
+    return review_suggestions
 
 def parse_checkstyle_output(xml_output):
     if not xml_output.strip():
@@ -55,7 +59,7 @@ def parse_checkstyle_output(xml_output):
             line = error.get('line')
             column = error.get('column')
             severity = error.get('severity')
-            violations.append(f"{filename} - Line {line}, Column {column}, Severity: {severity}: {message}")
+            violations.append(f"Line {line}, Column {column}, Severity: {severity}: {message}")
     
     return '\n'.join(violations) if violations else "No Checkstyle violations found."
 
