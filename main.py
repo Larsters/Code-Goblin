@@ -19,7 +19,8 @@ def run_checkstyle(java_file, checkstyle_jar, config_file):
     return result.stdout
 
 def ai_code_review(code_snippet):
-    prompt = f"""Review the following Java code for style issues and suggest improvements. Return the results in Russian, but keep it concise:
+    prompt = f"""Review the following Java code for style issues and suggest improvements.
+The code is written by students, so please preserve the original language of the code (either Russian or English). Do not translate or change the language of the code itself, just provide improvements and feedback in Russian:
 
 ```java
 {code_snippet}
@@ -58,7 +59,7 @@ def parse_checkstyle_output(xml_output):
 
 # Combined review using LLM
 def generate_combined_review(checkstyle_output, ai_review_output):
-    prompt = f"""The following two reviews were generated: one from Checkstyle and one from an AI review of the code. Summarize them into one concise review in Russian, but focus only on key improvements. Here are the two reviews:
+    prompt = f"""The following two reviews were generated: one from Checkstyle and one from an AI review of the code. Summarize them into one concise review in Russian, but preserve the original language of the code, and do not change or translate the code:
 
 Checkstyle Output:
 {checkstyle_output}
