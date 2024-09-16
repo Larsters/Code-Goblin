@@ -80,7 +80,7 @@ Return a concise and useful review in Russian.
     return response.choices[0].message.content
 
 def main():
-    java_file = 'Sample.java'
+    java_file = 'sample.java'
     checkstyle_jar = 'checkstyle-10.18.1-all.jar'
     config_file = 'google_checks.xml'
     
